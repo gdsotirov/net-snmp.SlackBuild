@@ -1,0 +1,10 @@
+net-snmp: Net-SNMP 5.2 (2004-11-24)
+net-snmp:
+net-snmp: Net-SNMP is a suite of applications used to implement SNMP v1,
+net-snmp: SNMP v2c and SNMP v3 using both IPv4 and IPv6.
+net-snmp:
+net-snmp: ---
+net-snmp: Package build by George D. Sotirov <gdsotirov@yahoo.com>
+net-snmp: Configure command line: ./configure --prefix=/usr --exec-prefix=/usr --sysconfdir=/etc
+net-snmp: Package build: 2005-01-22 20:27:00 EET
+net-snmp:
