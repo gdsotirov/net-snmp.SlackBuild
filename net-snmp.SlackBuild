@@ -1,0 +1,82 @@
+#!/bin/sh
+# Net-SNMP SlackBuild by Georgi D. Sotirov <gdsotirov@dir.bg>
+# Portions based on UCD-SNMP SlackBuild by Robert Stan <robalo@linuxpackages.net>
+#
+
+. /etc/slack-package.conf
+
+NAME=net-snmp
+VERSION=5.3.0.1
+BUILD=1
+
+if [ "x$TMP" = "x" ]; then
+  TMP=/tmp
+fi
+
+PKG=$TMP/package-$NAME
+if [ ! -d $TMP ]; then
+  mkdir -p $TMP # location to build the source
+fi
+if [ ! -d $PKG ]; then
+  mkdir -p $PKG # place for the package to be built
+fi
+
+# Extract the sources
+SRC=$NAME-$VERSION
+cd $TMP
+tar xvfz $CWD/$SRC.tar.gz
+cd $SRC
+
+# Configure and build the package
+./configure --build=${ARCH}-pc-linux-gnu \
+            --prefix=/usr \
+            --sysconfdir=/etc \
+            --localstatedir=/var \
+            --datadir=/etc \
+            --disable-debugging \
+            --enable-shared \
+            --with-openssl=/usr \
+            --with-libwrap \
+            --with-defaults || exit 1
+make || exit 1
+make prefix=$PKG/usr exec_prefix=$PKG/usr datadir=$PKG/etc install
+
+# Strip binaries
+strip_bin $PKG
+strip_lib $PKG
+strip_static $PKG
+
+# Set permissions
+chown -R root.root $PKG
+bin_perms $PKG
+sbin_perms $PKG
+find $PKG/etc -type f -exec chmod 644 {} \; 1>/dev/null 2>/dev/null
+find $PKG/etc -type d -exec chmod 755 {} \; 1>/dev/null 2>/dev/null
+find $PKG/usr/include -type f -exec chmod 644 {} \; 1>/dev/null 2>/dev/null
+find $PKG/usr/include -type d -exec chmod 755 {} \; 1>/dev/null 2>/dev/null
+
+# Compress manpages
+gzip_man $PKG
+
+# Copy the example config file
+cp $TMP/$SRC/EXAMPLE.conf $PKG/etc/snmp/snmpd.conf.example
+
+# Create documentation
+DOCFILES="$DOCFILES AGENT.txt CodingStyle PORTING"
+create_docs $PKG $NAME-$VERSION
+
+# Include service info
+cp $CWD/$NAME-$VERSION.txt $PKG/install/slack-desc
+mkdir -p $PKG/usr/src/slackbuilds/$NAME-$VERSION/
+cp $CWD/$NAME.SlackBuild $PKG/usr/src/slackbuilds/$NAME-$VERSION/
+
+# Build the package
+cd $PKG
+makepkg -l y -c n $TMP/${NAME}-${VERSION}-${ARCH}-${BUILD}${MYIN}.tgz
+
+# Cleanup (optionally)
+if [ "$1" = "--cleanup" ]; then
+  rm -rf $PKG
+  rm -rf $TMP/$SRC
+fi
+
