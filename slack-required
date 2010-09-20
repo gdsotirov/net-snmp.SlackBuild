@@ -1,0 +1,5 @@
+glibc-solibs >= 2.11.1
+openssl >= 0.9.8n | openssl-solibs >= 0.9.8n
+libnl >= 1.1
+mysql >= 5.1
+zlib >= 1.2.3
