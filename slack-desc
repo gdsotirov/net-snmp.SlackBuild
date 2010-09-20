@@ -1,11 +1,12 @@
-net-snmp: Net-SNMP 5.3.0.1 (2006-01-13) Suite of SNMP applications
+net-snmp: Net-SNMP (Simple Network Management Protocol daemon, libs and tools)
 net-snmp:
 net-snmp: Simple Network Management Protocol (SNMP) is a widely used protocol
 net-snmp: for monitoring the health and welfare of network equipment (such as
-net-snmp: routers), computer equipment, and even devices like UPSs. Net-SNMP
+net-snmp: routers), computer equipment, and even devices like UPSs.  Net-SNMP
 net-snmp: is a suite of applications used to implement SNMP v1, v2c, and v3,
-net-snmp: using both IPv4 and IPv6. It includes an extensible agent, an SNMP
-net-snmp: library, tools to get/set information from SNMP agents, tools to
-net-snmp: generate and handle SNMP traps, and so on.
+net-snmp: using both IPv4 and IPv6.  It includes an extensible agent, an SNMP
+net-snmp: library, tools to request or set information from SNMP agents,
+net-snmp: tools to generate and handle SNMP traps, and so on.
+net-snmp: This package includes also Perl and Python bindings.
 net-snmp:
-net-snmp: Packager: Georgi D. Sotirov <gdsotirov@dir.bg>
+net-snmp: Packaged by Georgi D. Sotirov <gdsotirov@dir.bg>
