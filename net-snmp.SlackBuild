@@ -1,82 +1,125 @@
 #!/bin/sh
-# Net-SNMP SlackBuild by Georgi D. Sotirov <gdsotirov@dir.bg>
-# Portions based on UCD-SNMP SlackBuild by Robert Stan <robalo@linuxpackages.net>
+#
+# SlackBuild for Net-SNMP
+# Written by Georgi D. Sotirov <gdsotirov@dir.bg>
 #
 
-. /etc/slack-package.conf
+. ../slack-package.conf
 
 NAME=net-snmp
-VERSION=5.3.0.1
-BUILD=1
+VERSION=5.5
+BUILD=${BUILD:-1}
+ARCH=${ARCH:-i486}
 
-if [ "x$TMP" = "x" ]; then
-  TMP=/tmp
+TMP=${TMP:-/tmp}
+CWD=${CWD:-`pwd`}
+
+if [ ! -e $TMP ]; then
+  mkdir -p $TMP # location to build the source
+fi
+
+SRC=$TMP/$NAME-$VERSION
+if [ -e $SRC -a -d $SRC ]; then
+  echo "Source directory '$SRC' already exists! Plaese, move it or remove it."
+  exit 1
 fi
 
 PKG=$TMP/package-$NAME
-if [ ! -d $TMP ]; then
-  mkdir -p $TMP # location to build the source
+if [ -e $PKG -a -d $PKG ]; then
+  echo "Package creation directory '$PKG' already exists! Please, move it or remove it."
+  exit 2
 fi
-if [ ! -d $PKG ]; then
-  mkdir -p $PKG # place for the package to be built
-fi
+mkdir -p $PKG
 
-# Extract the sources
-SRC=$NAME-$VERSION
+# Extract the source
 cd $TMP
-tar xvfz $CWD/$SRC.tar.gz
+tar -xvf $CWD/$NAME-$VERSION.tar.gz || exit 1
 cd $SRC
+fix_source
 
-# Configure and build the package
-./configure --build=${ARCH}-pc-linux-gnu \
+# Apply patches
+patch -p1 < $CWD/$NAME-$VERSION.diff
+
+# Configure
+CFLAGS=$SLKCFLAGS \
+CXXFLAGS=$SLKCFLAGS \
+./configure --build=$ARCH-slackware-linux \
+            --host=$ARCH-slackware-linux \
             --prefix=/usr \
-            --sysconfdir=/etc \
+            --sysconfdir=/etc/snmp \
             --localstatedir=/var \
-            --datadir=/etc \
+            --libdir=/usr/lib/${LIBDIRSUFFIX} \
+            --mandir=/usr/man \
+            --enable-ipv6 \
             --disable-debugging \
-            --enable-shared \
+            --enable-shared=yes \
+            --enable-static=no \
             --with-openssl=/usr \
+            --without-rpm \
+            --with-default-snmp-version=3 \
+            --with-sys-contact="root@example.org" \
+            --with-sys-location="unknown" \
+            --with-persistent-directory="/var/lib/net-snmp" \
+            --with-logfile="/var/log/snmpd.log" \
+            --with-mib-modules="mibII/mta_sendmail ucd-snmp/diskio tunnel" \
+            --with-perl-modules \
+            --with-python-modules \
             --with-libwrap \
-            --with-defaults || exit 1
-make || exit 1
-make prefix=$PKG/usr exec_prefix=$PKG/usr datadir=$PKG/etc install
+            --with-zlib \
+            --with-bzip2 \
+            --with-mysql || exit 2
 
-# Strip binaries
-strip_bin $PKG
-strip_lib $PKG
-strip_static $PKG
+# Build & install
+make INSTALLDIRS=vendor -j4 || exit 3 
+make INSTALLDIRS=vendor DESTDIR=$PKG install || exit 4
 
-# Set permissions
-chown -R root.root $PKG
+# Move man pages installed in wrong place(s)
+( cd $PKG/usr/share/man/
+  for file in `find . -type f -name *.[123456789]`; do
+    mv $file $PKG/usr/man/$file
+  done;
+  rm -rf $PKG/usr/share/man )
+
+mkdir -p $PKG/var/lib/net-snmp
+mkdir -p $PKG/etc/snmp
+install -m 644 $CWD/snmpd.conf $PKG/etc/snmp/snmpd.conf.new
+mkdir -p $PKG/etc/rc.d
+install -m 644 $CWD/rc.snmpd $PKG/etc/rc.d/rc.snmpd.new
+
+# Prepare
 bin_perms $PKG
 sbin_perms $PKG
-find $PKG/etc -type f -exec chmod 644 {} \; 1>/dev/null 2>/dev/null
-find $PKG/etc -type d -exec chmod 755 {} \; 1>/dev/null 2>/dev/null
-find $PKG/usr/include -type f -exec chmod 644 {} \; 1>/dev/null 2>/dev/null
-find $PKG/usr/include -type d -exec chmod 755 {} \; 1>/dev/null 2>/dev/null
-
-# Compress manpages
+( cd $PKG; strip_bin; strip_lib )
+( cd $SRC; create_docs $PKG $NAME-$VERSION )
 gzip_man $PKG
 
-# Copy the example config file
-cp $TMP/$SRC/EXAMPLE.conf $PKG/etc/snmp/snmpd.conf.example
+mkdir -p $PKG/install
+install -m 644 $CWD/doinst.sh      $PKG/install/doinst.sh
+install -m 644 $CWD/slack-desc     $PKG/install/slack-desc
+install -m 644 $CWD/slack-required $PKG/install/slack-required
+install -m 644 $CWD/slack-suggests $PKG/install/slack-suggests
 
-# Create documentation
-DOCFILES="$DOCFILES AGENT.txt CodingStyle PORTING"
-create_docs $PKG $NAME-$VERSION
+SBDIR=$PKG/usr/src/slackbuilds/$NAME-$VERSION
+mkdir -p $SBDIR
+install -m 644 $CWD/doinst.sh           $SBDIR/doinst.sh
+install -m 644 $CWD/slack-desc          $SBDIR/slack-desc
+install -m 644 $CWD/slack-required      $SBDIR/slack-required
+install -m 644 $CWD/snmpd.conf          $SBDIR/snmpd.conf
+install -m 644 $CWD/rc.snmpd            $SBDIR/rc.snmpd
+install -m 644 $CWD/$NAME-$VERSION.diff $PKG/usr/src/slackbuilds/$NAME-$VERSION/$NAME-$VERSION.diff
+install -m 644 $CWD/$NAME.SlackBuild    $SBDIR/$NAME.SlackBuild
 
-# Include service info
-cp $CWD/$NAME-$VERSION.txt $PKG/install/slack-desc
-mkdir -p $PKG/usr/src/slackbuilds/$NAME-$VERSION/
-cp $CWD/$NAME.SlackBuild $PKG/usr/src/slackbuilds/$NAME-$VERSION/
-
-# Build the package
+# Pack
 cd $PKG
-makepkg -l y -c n $TMP/${NAME}-${VERSION}-${ARCH}-${BUILD}${MYIN}.tgz
+PKGNAME=$NAME-$VERSION-$ARCH-$BUILD$MYIN
+makepkg -l y -c n -p $PKG_DIR/$PKGNAME.txz
+cd $PKG_DIR
+md5sum $PKGNAME.txz > $PKGNAME.txz.md5
+cat $PKG/install/slack-desc > $PKG_DIR/$PKGNAME.txt
 
-# Cleanup (optionally)
-if [ "$1" = "--cleanup" ]; then
+# Clean up (optionally)
+if [ "$1" == "--cleanup" ]; then
+  rm -rf $SRC
   rm -rf $PKG
-  rm -rf $TMP/$SRC
 fi
 
