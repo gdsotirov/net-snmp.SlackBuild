@@ -1,0 +1,36 @@
+# Fix seg fault in glibc when openvpn is running.
+# See http://net-snmp.svn.sourceforge.net/viewvc/net-snmp?view=revision&revision=17931
+
+diff -N -r -U 3 net-snmp-5.5-orig/agent/mibgroup/ip-mib/data_access/ipaddress_ioctl.c net-snmp-5.5/agent/mibgroup/ip-mib/data_access/ipaddress_ioctl.c
+--- net-snmp-5.5-orig/agent/mibgroup/ip-mib/data_access/ipaddress_ioctl.c	2009-05-07 00:59:20.000000000 +0300
++++ net-snmp-5.5/agent/mibgroup/ip-mib/data_access/ipaddress_ioctl.c	2010-09-20 11:37:37.000000000 +0300
+@@ -135,7 +135,6 @@
+     struct ifreq   *ifrp;
+     struct sockaddr save_addr;
+     struct sockaddr_in * si;
+-    netsnmp_ipaddress_entry *entry, *bcastentry = NULL;
+     struct address_flag_info addr_info;
+     in_addr_t       ipval;
+     _ioctl_extras           *extras;
+@@ -156,6 +155,7 @@
+ 
+     ifrp = ifc.ifc_req;
+     for(i=0; i < interfaces; ++i, ++ifrp) {
++        netsnmp_ipaddress_entry *entry, *bcastentry = NULL;
+ 
+         DEBUGMSGTL(("access:ipaddress:container",
+                     " interface %d, %s\n", i, ifrp->ifr_name));
+# Fix Python installation path
+
+diff -N -r -U 3 net-snmp-5.5-orig/Makefile.in net-snmp-5.5/Makefile.in
+--- net-snmp-5.5-orig/Makefile.in	2008-09-09 23:27:23.000000000 +0300
++++ net-snmp-5.5/Makefile.in	2010-09-21 01:36:49.000000000 +0300
+@@ -213,7 +213,7 @@
+         fi
+ 
+ pythoninstall:
+-	@(dir=`pwd`; cd python; $(PYMAKE) install --basedir=$$dir) ; \
++	@(dir=`pwd`; cd python; $(PYMAKE) install --basedir=$$dir --root=$(INSTALL_PREFIX)) ; \
+         if test $$? != 0 ; then \
+            exit 1 ; \
+         fi
