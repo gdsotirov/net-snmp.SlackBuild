@@ -9,4 +9,4 @@ net-snmp: library, tools to request or set information from SNMP agents,
 net-snmp: tools to generate and handle SNMP traps, and so on.
 net-snmp: This package includes also Perl and Python bindings.
 net-snmp:
-net-snmp: Packaged by Georgi D. Sotirov <gdsotirov@dir.bg>
+net-snmp: Packaged by Georgi D. Sotirov <gdsotirov@gmail.com>
